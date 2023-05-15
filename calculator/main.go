@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/joho/godotenv"
 	"github.com/n8bour/expenses/calculator/api"
+	"github.com/n8bour/expenses/calculator/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,7 @@ func main() {
 
 	p := os.Getenv("PORT")
 
-	http.HandleFunc("/calculator", api.NewHandleCalculator())
+	http.Handle("/", middleware.SimpleLogging(api.NewHandleCalculator()))
 
 	log.Printf("Server is up and running on port: %s\n", p)
 	log.Fatal(http.ListenAndServe(p, nil))

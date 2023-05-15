@@ -8,8 +8,8 @@ import (
 
 type HandleCalculatorFunc func(ResponseWriter, *Request) error
 
-func NewHandleCalculator() HandlerFunc {
-	return WrapHandlers(handlePostCalculation)
+func NewHandleCalculator() Handler {
+	return wrapHandler(handlePostCalculation)
 }
 
 func handlePostCalculation(w ResponseWriter, r *Request) error {
@@ -31,10 +31,10 @@ func handlePostCalculation(w ResponseWriter, r *Request) error {
 	return WriteJSON(w, StatusOK, resp)
 }
 
-func WrapHandlers(fn HandleCalculatorFunc) HandlerFunc {
-	return func(w ResponseWriter, r *Request) {
+func wrapHandler(fn HandleCalculatorFunc) Handler {
+	return HandlerFunc(func(w ResponseWriter, r *Request) {
 		if err := fn(w, r); err != nil {
 			_ = WriteJSON(w, StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
-	}
+	})
 }
