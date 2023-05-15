@@ -22,3 +22,8 @@ go.work
 
 # Outputs
 bin/
+
+.idea/
+.idea/*
+
+calculator/.env
