@@ -18,15 +18,12 @@ func NewExpenseService(store db.Storer[data.Expense]) *ExpensesService {
 }
 
 func (s *ExpensesService) CreateExpense(exp types.ExpenseRequest) (*types.ExpenseRequest, error) {
-
 	r, err := s.store.Insert(exp.ToExpense())
 	if err != nil {
 		return nil, err
 	}
 
-	exp.ID = strconv.Itoa(int(r.ID))
-
-	return &exp, nil
+	return exp.FromExpense(r), nil
 }
 
 func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseRequest, err error) {
@@ -40,4 +37,18 @@ func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseRequest, e
 	}
 
 	return result.FromExpense(r), nil
+}
+
+func (s *ExpensesService) ListExpenses() (*[]types.ExpenseRequest, error) {
+	r, err := s.store.List()
+	if err != nil {
+		return nil, err
+	}
+	var result []types.ExpenseRequest
+	for _, ex := range *r {
+		e := types.ExpenseRequest{}
+		result = append(result, *e.FromExpense(&ex))
+
+	}
+	return &result, nil
 }

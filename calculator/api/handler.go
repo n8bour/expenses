@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/n8bour/expenses/calculator/internal"
 	"github.com/n8bour/expenses/calculator/types"
@@ -21,9 +20,6 @@ func NewHandleCalculator(svc *internal.ExpensesService) *CalculatorHandler {
 }
 
 func (ch *CalculatorHandler) HandlePostCalculation(w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
-	if r.Method != "POST" {
-		return WriteJSON(w, http.StatusBadRequest, fmt.Errorf("invalid HTTP method %s", r.Method))
-	}
 	var resp types.ExpenseRequest
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	if err != nil {
@@ -38,17 +34,22 @@ func (ch *CalculatorHandler) HandlePostCalculation(w http.ResponseWriter, r *htt
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
-func (ch *CalculatorHandler) HandleGetCalculation(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	if r.Method != "GET" {
-		return WriteJSON(w, http.StatusBadRequest, fmt.Errorf("invalid HTTP method %s", r.Method))
-	}
-
+func (ch *CalculatorHandler) HandleGetCalculation(w http.ResponseWriter, _ *http.Request, p httprouter.Params) error {
 	expense, err := ch.svc.GetExpense(p.ByName("id"))
 	if err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err)
 	}
 
 	return WriteJSON(w, http.StatusOK, expense)
+}
+
+func (ch *CalculatorHandler) HandleListCalculation(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) error {
+	expenses, err := ch.svc.ListExpenses()
+	if err != nil {
+		return WriteJSON(w, http.StatusBadRequest, err)
+	}
+
+	return WriteJSON(w, http.StatusOK, expenses)
 }
 
 func WrapHandlers(fn HandleCalculatorFunc) httprouter.Handle {

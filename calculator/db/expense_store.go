@@ -2,32 +2,35 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"github.com/n8bour/expenses/calculator/data"
 	"log"
 	"time"
 )
 
 type ExpenseStore struct {
-	*sql.DB
+	*sqlx.DB
 }
 
-func NewSqlExpenseStore(db *sql.DB) *ExpenseStore {
-	setup(db)
+func NewSqlExpenseStore(db *sqlx.DB) *ExpenseStore {
+	autoMigrate(db)
 	return &ExpenseStore{DB: db}
 }
 
 func (s *ExpenseStore) Insert(exp data.Expense) (*data.Expense, error) {
-	query := "insert into expense (type, value) values ($1,$2) returning id"
+	query := "insert into expense (type, value) values (:type, :value) returning id"
 
-	r := s.QueryRow(query, exp.Type, exp.Value)
+	//r := s.QueryRow(query, exp.Type, exp.Value)
 
-	var id int64
-	err := r.Scan(&id)
+	row, err := s.NamedQuery(query, &exp)
 	if err != nil {
 		return nil, err
 	}
-	exp.ID = id
+	row.Next()
+	err = row.StructScan(&exp)
+	if err != nil {
+		return nil, err
+	}
 
 	return &exp, nil
 }
@@ -35,8 +38,7 @@ func (s *ExpenseStore) Insert(exp data.Expense) (*data.Expense, error) {
 func (s *ExpenseStore) Get(id int64) (*data.Expense, error) {
 	var r data.Expense
 	query := "select * from expense where id = $1"
-	row := s.QueryRow(query, id)
-	err := row.Scan(&r.ID, &r.Type, &r.Value)
+	err := s.DB.Get(&r, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +47,17 @@ func (s *ExpenseStore) Get(id int64) (*data.Expense, error) {
 }
 
 func (s *ExpenseStore) List() (*[]data.Expense, error) {
-	//TODO implement me
-	panic("implement me")
+	var r []data.Expense
+	query := "select * from expense"
+	err := s.DB.Select(&r, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
 }
 
-func setup(db *sql.DB) {
+func autoMigrate(db *sqlx.DB) {
 	query := `create table if not exists expense(id serial primary key,type varchar not null,value float4 not null);`
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)

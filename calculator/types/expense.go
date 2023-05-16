@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/n8bour/expenses/calculator/data"
 	"strconv"
+	"strings"
 )
 
 type ExpenseRequest struct {
@@ -13,7 +14,7 @@ type ExpenseRequest struct {
 
 func (er *ExpenseRequest) ToExpense() data.Expense {
 	return data.Expense{
-		Type:  er.Type,
+		Type:  strings.TrimSpace(er.Type),
 		Value: er.Value,
 	}
 }
