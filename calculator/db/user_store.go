@@ -2,45 +2,69 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"github.com/n8bour/expenses/calculator/data"
 	"log"
 	"time"
 )
 
 type UserStore struct {
-	*sql.DB
+	*sqlx.DB
 }
 
-func NewSqlUserStore(db *sql.DB) *UserStore {
+func NewSqlUserStore(db *sqlx.DB) *UserStore {
+	autoMigrateUser(db)
 	return &UserStore{DB: db}
 }
-func (s *UserStore) Post(exp data.User) (*data.User, error) {
-	/*query := "INSERT INTO user (username, password) VALUES (?, ?)"
-	r, err := s.Exec(query, exp.Type, exp.Value)
-	if err != nil {
-		return nil, err
-	}
 
-	id, err := r.LastInsertId()
+func (s *UserStore) Insert(exp data.User) (*data.User, error) {
+	query := "insert into user (type, value) values (:username, :password) returning id"
+
+	//r := s.QueryRow(query, exp.Type, exp.Value)
+
+	row, err := s.NamedQuery(query, &exp)
 	if err != nil {
 		return nil, err
 	}
-	exp.ID = id*/
+	row.Next()
+	err = row.StructScan(&exp)
+	if err != nil {
+		return nil, err
+	}
 
 	return &exp, nil
 }
 
-func (s *UserStore) init() {
-	query := `CREATE TABLE IF NOT EXISTS user(id int primary key auto_increment, "username" varchar,  "password" varchar)`
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+func (s *UserStore) Get(id int64) (*data.User, error) {
+	var r data.User
+	query := "select * from user where id = $1"
+	err := s.DB.Get(&r, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
+func (s *UserStore) List() (*[]data.User, error) {
+	var r []data.User
+	query := "select * from user"
+	err := s.DB.Select(&r, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
+func autoMigrateUser(db *sqlx.DB) {
+	query := `create table if not exists user(id serial primary key,username varchar not null,password float4 not null);`
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelFunc()
 
-	res, err := s.ExecContext(ctx, query)
+	_, err := db.ExecContext(ctx, query)
 	if err != nil {
 		log.Print("ERROR CREATING TABLE: ", err)
 	}
-
-	log.Println("Table Successfully Created", res)
-
 }

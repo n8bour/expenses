@@ -13,7 +13,7 @@ type ExpenseStore struct {
 }
 
 func NewSqlExpenseStore(db *sqlx.DB) *ExpenseStore {
-	autoMigrate(db)
+	autoMigrateExpense(db)
 	return &ExpenseStore{DB: db}
 }
 
@@ -57,7 +57,7 @@ func (s *ExpenseStore) List() (*[]data.Expense, error) {
 	return &r, nil
 }
 
-func autoMigrate(db *sqlx.DB) {
+func autoMigrateExpense(db *sqlx.DB) {
 	query := `create table if not exists expense(id serial primary key,type varchar not null,value float4 not null);`
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
