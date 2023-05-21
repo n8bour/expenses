@@ -18,7 +18,7 @@ func NewSqlUserStore(db *sqlx.DB) *UserStore {
 }
 
 func (s *UserStore) Insert(exp data.User) (*data.User, error) {
-	query := "insert into user (type, value) values (:username, :password) returning id"
+	query := `insert into "user" (username, password) values (:username, :password) returning id`
 
 	//r := s.QueryRow(query, exp.Type, exp.Value)
 
@@ -37,7 +37,7 @@ func (s *UserStore) Insert(exp data.User) (*data.User, error) {
 
 func (s *UserStore) Get(id int64) (*data.User, error) {
 	var r data.User
-	query := "select * from user where id = $1"
+	query := `select * from "user" where id = $1`
 	err := s.DB.Get(&r, query, id)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (s *UserStore) Get(id int64) (*data.User, error) {
 
 func (s *UserStore) List() (*[]data.User, error) {
 	var r []data.User
-	query := "select * from user"
+	query := `select * from "user"`
 	err := s.DB.Select(&r, query)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *UserStore) List() (*[]data.User, error) {
 }
 
 func autoMigrateUser(db *sqlx.DB) {
-	query := `create table if not exists user(id serial primary key,username varchar not null,password float4 not null);`
+	query := `create table if not exists "user"(id serial primary key,username varchar not null,password varchar not null);`
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelFunc()

@@ -5,15 +5,18 @@ import (
 	"github.com/n8bour/expenses/calculator/db"
 	"github.com/n8bour/expenses/calculator/types"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 )
 
 type UserService struct {
-	store db.Storer[data.User]
+	store        db.Storer[data.User]
+	expenseStore db.Storer[data.Expense]
 }
 
-func NewUserService(store db.Storer[data.User]) *UserService {
+func NewUserService(store db.Storer[data.User], es db.Storer[data.Expense]) *UserService {
 	return &UserService{
-		store: store,
+		store:        store,
+		expenseStore: es,
 	}
 }
 
@@ -24,14 +27,9 @@ func (s *UserService) CreateUser(usr types.UserRequest) (*types.UserResponse, er
 		return nil, err
 	}
 
-	//usr.Password = password
+	usr.Password = string(password)
 
-	err = bcrypt.CompareHashAndPassword(password, []byte(usr.Password))
-	if err != nil {
-		return nil, err
-	}
-
-	/*r, err := s.store.Insert(usr.ToUser())
+	r, err := s.store.Insert(usr.ToUser())
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +37,23 @@ func (s *UserService) CreateUser(usr types.UserRequest) (*types.UserResponse, er
 	return &types.UserResponse{
 		ID:       r.ID,
 		Username: r.Username,
-	}, nil*7
-	*/
-
-	return nil, nil
+	}, nil
 }
 
-func (s *UserService) GetUser(id string) (result *types.UserResponse, err error) {
+func (s *UserService) GetUser(sid string) (result *types.UserResponse, err error) {
 
-	//return result.FromUser(r), nil
-	return nil, nil
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := s.store.Get(int64(id))
+	if err != nil {
+		return nil, err
+
+	}
+
+	return result.FromUser(u), nil
 }
 
 func (s *UserService) ListUsers() (*[]types.UserResponse, error) {

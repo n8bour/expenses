@@ -37,8 +37,9 @@ func main() {
 		}
 	}()
 
-	calculatorService := internal.NewExpenseService(db.NewSqlExpenseStore(pdb))
-	userService := internal.NewUserService(db.NewSqlUserStore(pdb))
+	expenseStore := db.NewSqlExpenseStore(pdb)
+	calculatorService := internal.NewExpenseService(expenseStore)
+	userService := internal.NewUserService(db.NewSqlUserStore(pdb), expenseStore)
 	handleCalculator := api.NewHandleCalculator(calculatorService)
 	handleUser := api.NewHandleUser(userService)
 
