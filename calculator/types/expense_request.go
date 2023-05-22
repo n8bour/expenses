@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ExpenseRequest represents the fields incoming from http request
 type ExpenseRequest struct {
 	ID     string  `json:"id,omitempty"`
 	Type   string  `json:"type"`
@@ -12,19 +13,11 @@ type ExpenseRequest struct {
 	UserID string  `json:"userID"`
 }
 
+// ToExpense converts ExpenseRequest to data.Expense
 func (er *ExpenseRequest) ToExpense() data.Expense {
 	return data.Expense{
 		Type:   strings.TrimSpace(er.Type),
 		Value:  er.Value,
 		UserID: er.UserID,
-	}
-}
-
-func (er *ExpenseRequest) FromExpense(e *data.Expense) *ExpenseRequest {
-	return &ExpenseRequest{
-		ID:     e.ID,
-		Type:   e.Type,
-		Value:  e.Value,
-		UserID: e.UserID,
 	}
 }

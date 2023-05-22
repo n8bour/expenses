@@ -7,6 +7,7 @@ type UserRequest struct {
 	Password string `json:"password"`
 }
 
+// ToUser converts UserRequest to data.User
 func (ur UserRequest) ToUser() data.User {
 	return data.User{
 		Username: ur.Username,
