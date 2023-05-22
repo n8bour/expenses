@@ -37,9 +37,10 @@ func main() {
 		}
 	}()
 
+	userStore := db.NewSqlUserStore(pdb)
 	expenseStore := db.NewSqlExpenseStore(pdb)
 	calculatorService := internal.NewExpenseService(expenseStore)
-	userService := internal.NewUserService(db.NewSqlUserStore(pdb), expenseStore)
+	userService := internal.NewUserService(userStore, expenseStore)
 	handleCalculator := api.NewHandleCalculator(calculatorService)
 	handleUser := api.NewHandleUser(userService)
 
@@ -50,6 +51,9 @@ func main() {
 	router.GET("/expense", api.WrapHandlers(handleCalculator.HandleListCalculation))
 
 	router.POST("/user", api.WrapHandlers(handleUser.HandlePostUser))
+	router.GET("/user/:id", api.WrapHandlers(handleUser.HandleGetUser))
+	router.GET("/user", api.WrapHandlers(handleUser.HandleListUsers))
+
 	log.Printf("Server is up and running on: %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, middleware.SimpleLogging(router)))
 }

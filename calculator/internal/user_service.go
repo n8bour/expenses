@@ -5,7 +5,6 @@ import (
 	"github.com/n8bour/expenses/calculator/db"
 	"github.com/n8bour/expenses/calculator/types"
 	"golang.org/x/crypto/bcrypt"
-	"strconv"
 )
 
 type UserService struct {
@@ -40,22 +39,27 @@ func (s *UserService) CreateUser(usr types.UserRequest) (*types.UserResponse, er
 	}, nil
 }
 
-func (s *UserService) GetUser(sid string) (result *types.UserResponse, err error) {
+func (s *UserService) GetUser(id string) (*types.UserResponse, error) {
+	var result types.UserResponse
 
-	id, err := strconv.Atoi(sid)
+	u, err := s.store.Get(id)
 	if err != nil {
 		return nil, err
 	}
-
-	u, err := s.store.Get(int64(id))
-	if err != nil {
-		return nil, err
-
-	}
-
 	return result.FromUser(u), nil
 }
 
 func (s *UserService) ListUsers() (*[]types.UserResponse, error) {
-	return nil, nil
+	list, err := s.store.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []types.UserResponse
+	for _, user := range *list {
+		u := types.UserResponse{}
+		result = append(result, *u.FromUser(&user))
+	}
+
+	return &result, nil
 }
