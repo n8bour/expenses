@@ -4,7 +4,6 @@ import (
 	"github.com/n8bour/expenses/calculator/data"
 	"github.com/n8bour/expenses/calculator/db"
 	"github.com/n8bour/expenses/calculator/types"
-	"strconv"
 )
 
 type ExpensesService struct {
@@ -17,21 +16,19 @@ func NewExpenseService(store db.Storer[data.Expense]) *ExpensesService {
 	}
 }
 
-func (s *ExpensesService) CreateExpense(exp types.ExpenseRequest) (*types.ExpenseRequest, error) {
+func (s *ExpensesService) CreateExpense(exp types.ExpenseRequest) (*types.ExpenseResponse, error) {
+	resp := types.ExpenseResponse{}
+
 	r, err := s.store.Insert(exp.ToExpense())
 	if err != nil {
 		return nil, err
 	}
 
-	return exp.FromExpense(r), nil
+	return resp.FromExpense(r), nil
 }
 
-func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseRequest, err error) {
-	param, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, err
-	}
-	r, err := s.store.Get(int64(param))
+func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseResponse, err error) {
+	r, err := s.store.Get(id)
 	if err != nil {
 		return nil, err
 	}
@@ -39,14 +36,14 @@ func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseRequest, e
 	return result.FromExpense(r), nil
 }
 
-func (s *ExpensesService) ListExpenses() (*[]types.ExpenseRequest, error) {
+func (s *ExpensesService) ListExpenses() (*[]types.ExpenseResponse, error) {
 	r, err := s.store.List()
 	if err != nil {
 		return nil, err
 	}
-	var result []types.ExpenseRequest
+	var result []types.ExpenseResponse
 	for _, ex := range *r {
-		e := types.ExpenseRequest{}
+		e := types.ExpenseResponse{}
 		result = append(result, *e.FromExpense(&ex))
 
 	}
