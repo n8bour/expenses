@@ -55,6 +55,20 @@ func (s *UserStore) Get(id string) (*data.User, error) {
 	return &r, nil
 }
 
+func (s *UserStore) GetByUsername(username string) (*data.User, error) {
+	var r data.User
+
+	//query := `select row_to_json(row) from (select * from user_expenses) row where row.username = $1`
+	query := `select * from "user" u where username = $1`
+
+	err := s.DB.Get(&r, query, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
 func (s *UserStore) List() (*[]data.User, error) {
 	var (
 		r     []data.User

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"github.com/julienschmidt/httprouter"
 	"github.com/n8bour/expenses/calculator/internal"
 	"github.com/n8bour/expenses/calculator/types"
@@ -18,7 +19,7 @@ func NewHandleUser(svc *internal.UserService) *UserHandler {
 	return &UserHandler{svc: svc}
 }
 
-func (ch *UserHandler) HandlePostUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
+func (ch *UserHandler) HandlePostUser(w http.ResponseWriter, r *http.Request) error {
 	var resp types.UserRequest
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	if err != nil {
@@ -33,8 +34,8 @@ func (ch *UserHandler) HandlePostUser(w http.ResponseWriter, r *http.Request, _ 
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
-func (ch *UserHandler) HandleGetUser(w http.ResponseWriter, _ *http.Request, p httprouter.Params) error {
-	expense, err := ch.svc.GetUser(p.ByName("id"))
+func (ch *UserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) error {
+	expense, err := ch.svc.GetUser(chi.URLParam(r, "id"))
 	if err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err)
 	}
@@ -42,7 +43,7 @@ func (ch *UserHandler) HandleGetUser(w http.ResponseWriter, _ *http.Request, p h
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
-func (ch *UserHandler) HandleListUsers(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) error {
+func (ch *UserHandler) HandleListUsers(w http.ResponseWriter, _ *http.Request) error {
 	expenses, err := ch.svc.ListUsers()
 	if err != nil {
 		return WriteJSON(w, http.StatusBadRequest, err)
