@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/n8bour/expenses/calculator/internal"
 	"github.com/n8bour/expenses/calculator/types"
-	"log"
-	"net/http"
 )
 
 type HandleCalculatorFunc func(http.ResponseWriter, *http.Request) error
@@ -20,43 +21,39 @@ func NewHandleCalculator(svc *internal.ExpensesService) *CalculatorHandler {
 }
 
 func (ch *CalculatorHandler) HandlePostCalculation(w http.ResponseWriter, r *http.Request) error {
-	var resp types.ExpenseRequest
-	err := json.NewDecoder(r.Body).Decode(&resp)
+	var req types.ExpenseRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		log.Println(err)
+		return BadRequest(req)
 	}
 
-	expense, err := ch.svc.CreateExpense(resp)
+	expense, err := ch.svc.CreateExpense(r.Context(), req)
 	if err != nil {
-		return err
+		log.Println(err)
+		return BadRequest(req)
 	}
 
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
 func (ch *CalculatorHandler) HandleGetCalculation(w http.ResponseWriter, r *http.Request) error {
-	expense, err := ch.svc.GetExpense(chi.URLParam(r, "id"))
+	param := chi.URLParam(r, "id")
+	expense, err := ch.svc.GetExpense(r.Context(), param)
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, err)
+		log.Println(err)
+		return NotResourceNotFound(param)
 	}
 
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
-func (ch *CalculatorHandler) HandleListCalculation(w http.ResponseWriter, _ *http.Request) error {
-	expenses, err := ch.svc.ListExpenses()
+func (ch *CalculatorHandler) HandleListCalculation(w http.ResponseWriter, r *http.Request) error {
+	expenses, err := ch.svc.ListExpenses(r.Context())
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, err)
+		log.Println(err)
+		return NotResourceNotFound("No Expenses found")
 	}
 
 	return WriteJSON(w, http.StatusOK, expenses)
-}
-
-func WrapHandlers(fn HandleCalculatorFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			log.Print(err.Error())
-			_ = WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		}
-	}
 }

@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"database/sql"
-	"github.com/jmoiron/sqlx"
-	"github.com/n8bour/expenses/calculator/data"
 	"log"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/n8bour/expenses/calculator/data"
 )
 
 type ExpenseStore struct {
@@ -18,10 +19,10 @@ func NewSqlExpenseStore(db *sqlx.DB) *ExpenseStore {
 	return &ExpenseStore{DB: db}
 }
 
-func (s *ExpenseStore) Insert(exp data.Expense) (*data.Expense, error) {
+func (s *ExpenseStore) Insert(ctx context.Context, exp data.Expense) (*data.Expense, error) {
 	query := "insert into expense (type, value, user_id) values (:type, :value, :user_id) returning id"
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancelFunc := context.WithTimeout(ctx, 2*time.Second)
 	defer cancelFunc()
 
 	tx, err := s.BeginTxx(ctx, &sql.TxOptions{})
@@ -43,10 +44,10 @@ func (s *ExpenseStore) Insert(exp data.Expense) (*data.Expense, error) {
 	return &exp, tx.Commit()
 }
 
-func (s *ExpenseStore) Get(id string) (*data.Expense, error) {
+func (s *ExpenseStore) Get(ctx context.Context, id string) (*data.Expense, error) {
 	var r data.Expense
 	query := "select * from expense where id = $1"
-	err := s.DB.Get(&r, query, id)
+	err := s.DB.GetContext(ctx, &r, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +55,10 @@ func (s *ExpenseStore) Get(id string) (*data.Expense, error) {
 	return &r, nil
 }
 
-func (s *ExpenseStore) List() (*[]data.Expense, error) {
+func (s *ExpenseStore) List(ctx context.Context) (*[]data.Expense, error) {
 	var r []data.Expense
 	query := "select * from expense"
-	err := s.DB.Select(&r, query)
+	err := s.DB.SelectContext(ctx, &r, query)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,12 @@ func (s *ExpenseStore) List() (*[]data.Expense, error) {
 }
 
 func autoMigrateExpense(db *sqlx.DB) {
-	query := `create table if not exists expense(id uuid default gen_random_uuid() primary key,type varchar not null,value float4 not null, user_id uuid not null, constraint fk_user foreign key(user_id) references "user"(id));`
+	query := `create table if not exists expense(
+    id uuid default gen_random_uuid() primary key,
+    type varchar not null,value float4 not null, 
+    user_id uuid not null, 
+    constraint fk_user foreign key(user_id) references "user"(id), 
+    created_at timestamp default current_timestamp);`
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelFunc()

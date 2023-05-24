@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"context"
+
 	"github.com/n8bour/expenses/calculator/data"
 	"github.com/n8bour/expenses/calculator/db"
 	"github.com/n8bour/expenses/calculator/types"
@@ -16,36 +18,35 @@ func NewExpenseService(store db.Storer[data.Expense]) *ExpensesService {
 	}
 }
 
-func (s *ExpensesService) CreateExpense(exp types.ExpenseRequest) (*types.ExpenseResponse, error) {
+func (s *ExpensesService) CreateExpense(ctx context.Context, exp types.ExpenseRequest) (*types.ExpenseResponse, error) {
 	resp := types.ExpenseResponse{}
 
-	r, err := s.store.Insert(exp.ToExpense())
+	r, err := s.store.Insert(ctx, exp.ToExpense())
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.FromExpense(r), nil
+	return resp.FromExpense(*r), nil
 }
 
-func (s *ExpensesService) GetExpense(id string) (result *types.ExpenseResponse, err error) {
-	r, err := s.store.Get(id)
+func (s *ExpensesService) GetExpense(ctx context.Context, id string) (result *types.ExpenseResponse, err error) {
+	r, err := s.store.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return result.FromExpense(r), nil
+	return result.FromExpense(*r), nil
 }
 
-func (s *ExpensesService) ListExpenses() (*[]types.ExpenseResponse, error) {
-	r, err := s.store.List()
+func (s *ExpensesService) ListExpenses(ctx context.Context) (*[]types.ExpenseResponse, error) {
+	r, err := s.store.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var result []types.ExpenseResponse
+	result := make([]types.ExpenseResponse, 0)
 	for _, ex := range *r {
 		e := types.ExpenseResponse{}
-		result = append(result, *e.FromExpense(&ex))
-
+		result = append(result, *e.FromExpense(ex))
 	}
 	return &result, nil
 }

@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"context"
+
 	"github.com/n8bour/expenses/calculator/data"
 	"github.com/n8bour/expenses/calculator/db"
 	"github.com/n8bour/expenses/calculator/types"
@@ -19,8 +21,7 @@ func NewUserService(store db.Storer[data.User], es db.Storer[data.Expense]) *Use
 	}
 }
 
-func (s *UserService) CreateUser(usr types.UserRequest) (*types.UserResponse, error) {
-
+func (s *UserService) CreateUser(ctx context.Context, usr types.UserRequest) (*types.UserResponse, error) {
 	password, err := bcrypt.GenerateFromPassword([]byte(usr.Password), 4)
 	if err != nil {
 		return nil, err
@@ -28,37 +29,35 @@ func (s *UserService) CreateUser(usr types.UserRequest) (*types.UserResponse, er
 
 	usr.Password = string(password)
 
-	r, err := s.store.Insert(usr.ToUser())
+	r, err := s.store.Insert(ctx, usr.ToUser())
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.UserResponse{
-		ID:       r.ID,
-		Username: r.Username,
-	}, nil
+	resp := types.UserResponse{}.FromUser(*r)
+	return resp, nil
 }
 
-func (s *UserService) GetUser(id string) (*types.UserResponse, error) {
+func (s *UserService) GetUser(ctx context.Context, id string) (*types.UserResponse, error) {
 	var result types.UserResponse
 
-	u, err := s.store.Get(id)
+	u, err := s.store.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return result.FromUser(u), nil
+	return result.FromUser(*u), nil
 }
 
-func (s *UserService) ListUsers() (*[]types.UserResponse, error) {
-	list, err := s.store.List()
+func (s *UserService) ListUsers(ctx context.Context) (*[]types.UserResponse, error) {
+	list, err := s.store.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []types.UserResponse
+	result := make([]types.UserResponse, 0)
 	for _, user := range *list {
 		u := types.UserResponse{}
-		result = append(result, *u.FromUser(&user))
+		result = append(result, *u.FromUser(user))
 	}
 
 	return &result, nil

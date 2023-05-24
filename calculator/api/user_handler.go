@@ -2,14 +2,15 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"net/mail"
+
 	"github.com/go-chi/chi/v5"
-	"github.com/julienschmidt/httprouter"
 	"github.com/n8bour/expenses/calculator/internal"
 	"github.com/n8bour/expenses/calculator/types"
-	"net/http"
 )
-
-type HandleUserFunc func(http.ResponseWriter, *http.Request, httprouter.Params) error
 
 type UserHandler struct {
 	svc *internal.UserService
@@ -20,33 +21,50 @@ func NewHandleUser(svc *internal.UserService) *UserHandler {
 }
 
 func (ch *UserHandler) HandlePostUser(w http.ResponseWriter, r *http.Request) error {
-	var resp types.UserRequest
-	err := json.NewDecoder(r.Body).Decode(&resp)
+	var req types.UserRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		log.Println(err)
+		return BadRequest(req)
 	}
 
-	expense, err := ch.svc.CreateUser(resp)
+	_, err = mail.ParseAddress(req.Email)
 	if err != nil {
-		return err
+		log.Println(err)
+		return BadRequest(fmt.Sprintf("invalid email '%s'", req.Email))
+	}
+
+	expense, err := ch.svc.CreateUser(r.Context(), req)
+	if err != nil {
+		log.Println(err)
+		return BadRequest(req)
 	}
 
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
 func (ch *UserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) error {
-	expense, err := ch.svc.GetUser(chi.URLParam(r, "id"))
+	param := chi.URLParam(r, "id")
+	ctx := r.Context()
+	cuID := ctx.Value("currentUser").(map[string]string)["id"]
+
+	if cuID != param {
+		return InvalidID()
+	}
+
+	expense, err := ch.svc.GetUser(ctx, param)
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, err)
+		log.Println(err)
+		return BadRequest(param)
 	}
 
 	return WriteJSON(w, http.StatusOK, expense)
 }
 
-func (ch *UserHandler) HandleListUsers(w http.ResponseWriter, _ *http.Request) error {
-	expenses, err := ch.svc.ListUsers()
+func (ch *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) error {
+	expenses, err := ch.svc.ListUsers(r.Context())
 	if err != nil {
-		return WriteJSON(w, http.StatusBadRequest, err)
+		return NotResourceNotFound("Users not found")
 	}
 
 	return WriteJSON(w, http.StatusOK, expenses)

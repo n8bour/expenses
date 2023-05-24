@@ -12,7 +12,7 @@ type ExpenseResponse struct {
 }
 
 // FromExpense converts *data.Expense to *ExpenseResponse
-func (er *ExpenseResponse) FromExpense(e *data.Expense) *ExpenseResponse {
+func (er *ExpenseResponse) FromExpense(e data.Expense) *ExpenseResponse {
 	return &ExpenseResponse{
 		ID:    e.ID,
 		Type:  e.Type,
