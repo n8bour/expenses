@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 )
@@ -19,8 +18,7 @@ func WrapHandlers(fn HandleCalculatorFunc) http.HandlerFunc {
 		if err := fn(w, r); err != nil {
 			log.Println(err)
 
-			var apiErr Error
-			if ok := errors.Is(err, apiErr); ok {
+			if apiErr, ok := err.(Error); ok {
 				_ = WriteJSON(w, apiErr.Code, apiErr.Message)
 				return
 			}

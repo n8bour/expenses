@@ -45,6 +45,6 @@ func InvalidID() Error {
 func NotResourceNotFound(res string) Error {
 	return Error{
 		Code:    http.StatusNotFound,
-		Message: res + " resource not found",
+		Message: fmt.Sprintf("%s not found", res),
 	}
 }

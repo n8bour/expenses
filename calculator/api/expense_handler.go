@@ -28,6 +28,13 @@ func (ch *CalculatorHandler) HandlePostCalculation(w http.ResponseWriter, r *htt
 		return BadRequest(req)
 	}
 
+	if len(req.Type) == 0 {
+		return BadRequest(req.Type)
+	}
+	if req.Value == 0 {
+		return BadRequest(req.Value)
+	}
+
 	expense, err := ch.svc.CreateExpense(r.Context(), req)
 	if err != nil {
 		log.Println(err)

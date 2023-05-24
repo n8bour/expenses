@@ -14,7 +14,7 @@ type ExpenseStore struct {
 	*sqlx.DB
 }
 
-func NewSqlExpenseStore(db *sqlx.DB) *ExpenseStore {
+func NewSQLExpenseStore(db *sqlx.DB) *ExpenseStore {
 	autoMigrateExpense(db)
 	return &ExpenseStore{DB: db}
 }

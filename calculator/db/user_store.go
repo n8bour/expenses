@@ -60,9 +60,9 @@ func (s *UserStore) GetCurrentUser(ctx context.Context) (*data.User, error) {
 
 	query := `select * from "user" u where username = $1`
 
-	username := ctx.Value("currentUser")
+	username := ctx.Value("currentUser").(map[string]string)["username"]
 
-	err := s.DB.GetContext(ctx, &r, query, username.(string))
+	err := s.DB.GetContext(ctx, &r, query, username)
 	if err != nil {
 		return nil, err
 	}

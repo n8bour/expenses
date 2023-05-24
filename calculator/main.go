@@ -39,7 +39,7 @@ func main() {
 	}()
 
 	userStore := db.NewSQLUserStore(pdb)
-	expenseStore := db.NewSqlExpenseStore(pdb)
+	expenseStore := db.NewSQLExpenseStore(pdb)
 
 	calculatorService := internal.NewExpenseService(expenseStore)
 	userService := internal.NewUserService(userStore, expenseStore)
