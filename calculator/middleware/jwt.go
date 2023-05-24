@@ -1,13 +1,17 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 )
+
+type CurrentUser string
 
 func JwtAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +39,12 @@ func JwtAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		var cu CurrentUser = "currentUser"
+		ctx := context.WithValue(r.Context(), cu, map[string]string{
+			"id":       claims["id"].(string),
+			"username": claims["username"].(string),
+		})
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

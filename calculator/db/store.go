@@ -1,7 +1,9 @@
 package db
 
+import "context"
+
 type Storer[T any] interface {
-	Insert(T) (*T, error)
-	Get(id string) (*T, error)
-	List() (*[]T, error)
+	Insert(context.Context, T) (*T, error)
+	Get(context.Context, string) (*T, error)
+	List(context.Context) (*[]T, error)
 }

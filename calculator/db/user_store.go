@@ -3,25 +3,26 @@ package db
 import (
 	"context"
 	"encoding/json"
-	"github.com/jmoiron/sqlx"
-	"github.com/n8bour/expenses/calculator/data"
 	"log"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/n8bour/expenses/calculator/data"
 )
 
 type UserStore struct {
 	*sqlx.DB
 }
 
-func NewSqlUserStore(db *sqlx.DB) *UserStore {
+func NewSQLUserStore(db *sqlx.DB) *UserStore {
 	autoMigrateUser(db)
 	return &UserStore{DB: db}
 }
 
-func (s *UserStore) Insert(exp data.User) (*data.User, error) {
-	query := `insert into "user" (username, password) values (:username, :password) returning id`
+func (s *UserStore) Insert(ctx context.Context, exp data.User) (*data.User, error) {
+	query := `insert into "user" (username, email ,password) values (:username, :email,:password) returning id`
 
-	row, err := s.NamedQuery(query, &exp)
+	row, err := s.NamedQueryContext(ctx, query, &exp)
 	if err != nil {
 		return nil, err
 	}
@@ -34,15 +35,14 @@ func (s *UserStore) Insert(exp data.User) (*data.User, error) {
 	return &exp, nil
 }
 
-func (s *UserStore) Get(id string) (*data.User, error) {
+func (s *UserStore) Get(ctx context.Context, id string) (*data.User, error) {
 	var (
 		r     data.User
 		rjson json.RawMessage
 	)
 	query := `select row_to_json(row) from (select * from user_expenses) row where row.id = $1`
-	//query := `select * from "user" u join expense e on e.user_id = $1 where id = $1`
 
-	err := s.DB.Get(&rjson, query, id)
+	err := s.DB.GetContext(ctx, &rjson, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -55,13 +55,14 @@ func (s *UserStore) Get(id string) (*data.User, error) {
 	return &r, nil
 }
 
-func (s *UserStore) GetByUsername(username string) (*data.User, error) {
+func (s *UserStore) GetCurrentUser(ctx context.Context) (*data.User, error) {
 	var r data.User
 
-	//query := `select row_to_json(row) from (select * from user_expenses) row where row.username = $1`
 	query := `select * from "user" u where username = $1`
 
-	err := s.DB.Get(&r, query, username)
+	username := ctx.Value("currentUser")
+
+	err := s.DB.GetContext(ctx, &r, query, username.(string))
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,19 @@ func (s *UserStore) GetByUsername(username string) (*data.User, error) {
 	return &r, nil
 }
 
-func (s *UserStore) List() (*[]data.User, error) {
+func (s *UserStore) GetByUsername(ctx context.Context, username string) (*data.User, error) {
+	var r data.User
+	query := `select * from "user" u where username = $1`
+
+	err := s.DB.GetContext(ctx, &r, query, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
+func (s *UserStore) List(ctx context.Context) (*[]data.User, error) {
 	var (
 		r     []data.User
 		rjson []json.RawMessage
@@ -78,7 +91,7 @@ func (s *UserStore) List() (*[]data.User, error) {
 select row_to_json(users_exp)
 from users_exp`
 
-	err := s.DB.Select(&rjson, query)
+	err := s.DB.SelectContext(ctx, &rjson, query)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +112,13 @@ from users_exp`
 }
 
 func autoMigrateUser(db *sqlx.DB) {
-	query := `create table if not exists "user"(id uuid default gen_random_uuid() primary key,username varchar not null,password varchar not null);`
+	query := `create table if not exists "user"(id uuid default gen_random_uuid() primary key,username varchar not null, email varchar not null, password varchar not null);`
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancelFunc()
 
 	_, err := db.ExecContext(ctx, query)
 	if err != nil {
-		log.Fatal("ERROR CREATING TABLE: ", err)
+		log.Panicf("ERROR CREATING TABLE: %s", err)
 	}
 }
