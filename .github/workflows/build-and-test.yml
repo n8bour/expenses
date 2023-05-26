@@ -11,16 +11,17 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
+env:
+    GOPATH: ${{ github.workspace }}
+    GOBIN: ${{ github.workspace }}/bin
+defaults:
+  run:
+    working-directory: ${{ env.GOPATH }}/src/web-api-go
+
 jobs:
   setup:
     name: Setup
     runs-on: ubuntu-latest
-    env:
-      GOPATH: ${{ github.workspace }}
-      GOBIN: ${{ github.workspace }}/bin
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/src/web-api-go
     steps:
       - uses: actions/checkout@v3
         with:
